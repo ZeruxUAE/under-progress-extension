@@ -3,7 +3,7 @@
 html[data-up-contrast="true"] body{background:#101820 !important;color:#FFFFFF !important}
 html[data-up-contrast="true"] body *{background-color:transparent !important;color:inherit !important;border-color:currentColor !important}
 html[data-up-contrast="true"] a{color:#7DEBD8 !important;text-decoration:underline !important}
-html[data-up-focus="true"] body::before{content:"";position:fixed;inset:0;z-index:2147483645;pointer-events:none;background:rgba(8,27,43,.12);mask:linear-gradient(#000 0 0) center 34%/min(86vw,var(--up-reading-width)) 44vh no-repeat;mix-blend-mode:multiply}
-html body{font-size:calc(100% * var(--up-text-scale)) !important;line-height:var(--up-line-spacing) !important}
-html body p,html body li,html body blockquote,html body dd{max-width:var(--up-reading-width) !important;line-height:var(--up-line-spacing) !important}
+html[data-up-focus="true"] body::before{content:"";position:fixed;inset:0;z-index:2147483645;pointer-events:none;background:rgba(8,27,43,.16);mask:linear-gradient(#000 0 0) center 34%/min(86vw,var(--up-reading-width)) 44vh no-repeat;mix-blend-mode:multiply}
+html body :is(p,li,blockquote,dd,dt,td,th,label){font-size:calc(1em * var(--up-text-scale)) !important;line-height:var(--up-line-spacing) !important}
+html body :is(p,li,blockquote,dd){max-width:var(--up-reading-width) !important}
 html body h1,html body h2,html body h3,html body h4{line-height:1.16 !important}

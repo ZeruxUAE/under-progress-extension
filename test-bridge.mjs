@@ -10,7 +10,7 @@ let storedSettings;
 let storedProfile;
 const root = { style: { values: {}, setProperty(key, value) { this.values[key] = value; } }, dataset: {} };
 const windowMock = {
-  location: { origin: "https://under-progress-psi.vercel.app" },
+  location: { origin: "https://under-progress-psi.vercel.app", hostname: "under-progress-psi.vercel.app" },
   postMessage(message, origin) { posted.push({ message, origin }); },
   addEventListener(type, callback) { listeners[type] = callback; },
   getSelection() { return { toString: () => "" }; },

@@ -5,12 +5,14 @@ const byId = (id) => document.getElementById(id);
 let presets = [];
 let defaultPresetId = "";
 
+function setApplyStatus(message, failure = false) { const status = byId("applyStatus"); status.textContent = message; status.style.borderColor = failure ? "#B6473C" : "rgba(15,139,123,.28)"; status.style.background = failure ? "#FCE7E5" : "#D9F3ED"; }
+
 function normalize(state = {}) { return { textScale: Number(state.textScale ?? 100), lineSpacing: Number(state.lineSpacing ?? 1.5), readingWidth: Number(state.readingWidth ?? 70), contrast: Boolean(state.contrast), focus: Boolean(state.focus) }; }
 function showValues(state) { byId("textScaleValue").textContent = `${state.textScale}%`; byId("lineSpacingValue").textContent = `${state.lineSpacing}×`; byId("readingWidthValue").textContent = `${state.readingWidth}ch`; }
 function writeControls(state) { const next = normalize(state); ids.forEach((id) => { byId(id).type === "checkbox" ? byId(id).checked = next[id] : byId(id).value = next[id]; }); showValues(next); }
 function getState() { return normalize({ textScale: byId("textScale").value, lineSpacing: byId("lineSpacing").value, readingWidth: byId("readingWidth").value, contrast: byId("contrast").checked, focus: byId("focus").checked }); }
 async function activeTab() { const [tab] = await chrome.tabs.query({ active: true, currentWindow: true }); return tab; }
-async function apply(state) { const tab = await activeTab(); if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: "apply", state }).catch(() => {}); }
+async function apply(state) { const tab = await activeTab(); if (!tab?.id) { setApplyStatus("Open a normal website first, then try again.", true); return false; } const result = await chrome.runtime.sendMessage({ type: "apply-active-tab", tabId: tab.id, state }); if (result?.applied) { setApplyStatus(result.injected ? "Controls applied. The extension attached to this page." : "Controls applied to this page."); return true; } setApplyStatus(result?.error || "This browser page cannot be adjusted.", true); return false; }
 async function persistAndApply() { const state = getState(); showValues(state); await chrome.storage.sync.set({ underProgress: state }); await apply(state); }
 function selectedPreset() { return presets.find((preset) => preset.id === byId("presetSelect").value); }
 function renderPresets() { const select = byId("presetSelect"); select.innerHTML = presets.length ? presets.map((preset) => `<option value="${preset.id}">${preset.name}</option>`).join("") : '<option value="">No saved presets yet</option>'; if (defaultPresetId && presets.some((preset) => preset.id === defaultPresetId)) select.value = defaultPresetId; updatePresetState(); }
@@ -27,6 +29,6 @@ byId("savePreset").addEventListener("click", savePreset);
 byId("applyPreset").addEventListener("click", applyPreset);
 byId("deletePreset").addEventListener("click", deletePreset);
 byId("setDefault").addEventListener("change", setDefaultPreset);
-byId("speak").addEventListener("click", async () => { const tab = await activeTab(); if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: "speak" }).catch(() => {}); });
+byId("speak").addEventListener("click", async () => { const tab = await activeTab(); if (!tab?.id) return setApplyStatus("Open a normal website first, then try again.", true); const result = await chrome.runtime.sendMessage({ type: "speak-active-tab", tabId: tab.id }); setApplyStatus(result?.applied ? "Reading the selected text or page aloud." : (result?.error || "No readable text was found."), !result?.applied); });
 byId("setup").addEventListener("click", () => chrome.tabs.create({ url: "https://under-progress-psi.vercel.app/setup" }));
 byId("reset").addEventListener("click", async () => { writeControls(defaults); await chrome.storage.sync.set({ underProgress: defaults }); await apply(defaults); });

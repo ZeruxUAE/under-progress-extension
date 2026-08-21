@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Under Progress",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "User-controlled reading, focus, contrast, and listening tools for the current webpage.",
-  "permissions": ["storage", "activeTab", "scripting"],
+  "permissions": ["storage", "activeTab", "scripting", "tabs"],
+  "host_permissions": ["<all_urls>"],
   "icons": {
     "16": "logo.png",
     "48": "logo.png",
@@ -17,6 +18,9 @@
       "48": "logo.png",
       "128": "logo.png"
     }
+  },
+  "background": {
+    "service_worker": "background.js"
   },
   "content_scripts": [{ "matches": ["<all_urls>"], "js": ["content.js"], "css": ["content.css"], "run_at": "document_idle" }]
 }
