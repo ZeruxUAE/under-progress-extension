@@ -9,12 +9,13 @@ const storageListeners = [];
 let storedSettings;
 let storedProfile;
 const root = { style: { values: {}, setProperty(key, value) { this.values[key] = value; } }, dataset: {} };
+const speech = { speaking: false, paused: false, starts: 0, cancel() { this.speaking = false; this.paused = false; }, speak() { this.speaking = true; this.paused = false; this.starts += 1; }, pause() { this.paused = true; }, resume() { this.paused = false; } };
 const windowMock = {
   location: { origin: "https://under-progress-psi.vercel.app", hostname: "under-progress-psi.vercel.app" },
   postMessage(message, origin) { posted.push({ message, origin }); },
   addEventListener(type, callback) { listeners[type] = callback; },
-  getSelection() { return { toString: () => "" }; },
-  speechSynthesis: { cancel() {}, speak() {} },
+  getSelection() { return { toString: () => "A short reading test." }; },
+  speechSynthesis: speech,
 };
 const chromeMock = {
   runtime: { onMessage: { addListener(callback) { listeners.runtime = callback; } } },
@@ -47,4 +48,12 @@ assert.equal(root.dataset.upFocus, "true", "Saved focus mode is applied to the a
 
 listeners.message({ origin: windowMock.location.origin, source: windowMock, data: { source: "under-progress-website", type: "request-profile" } });
 assert.ok(posted.some(({ message }) => message.type === "extension-profile" && message.settings.textScale === 120 && message.profile.disabilities.length === 2), "The extension returns settings and multiple disability selections to the website.");
+let speakResponse; listeners.runtime({ type: "speak" }, null, response => { speakResponse = response; });
+assert.equal(speakResponse.applied, true, "Read-aloud starts when text is available.");
+let pauseResponse; listeners.runtime({ type: "pause-speech" }, null, response => { pauseResponse = response; });
+assert.equal(pauseResponse.applied, true, "Read-aloud can be paused.");
+assert.equal(speech.paused, true, "Speech state records the pause.");
+let resumeResponse; listeners.runtime({ type: "resume-speech" }, null, response => { resumeResponse = response; });
+assert.equal(resumeResponse.applied, true, "Read-aloud can be resumed.");
+assert.equal(speech.paused, false, "Speech state clears after resume.");
 console.log("Under Progress extension bridge checks passed.");

@@ -21,7 +21,7 @@
       <section class="control-group"><label for="lineSpacing">Line spacing <output id="lineSpacingValue">1.5×</output></label><input id="lineSpacing" type="range" min="1.2" max="2" step="0.1" value="1.5" /></section>
       <section class="control-group"><label for="readingWidth">Reading width <output id="readingWidthValue">70ch</output></label><input id="readingWidth" type="range" min="45" max="90" step="5" value="70" /></section>
       <section class="toggles"><label class="toggle"><span><b>High contrast</b><small>Increase page contrast</small></span><input id="contrast" type="checkbox" /><i></i></label><label class="toggle"><span><b>Focus mode</b><small>Dim content outside reading</small></span><input id="focus" type="checkbox" /><i></i></label></section>
-      <button id="speak" class="secondary">Read selected text aloud</button><button id="setup" class="ghost wide">Open your Under Progress profile</button><button id="reset" class="ghost wide">Reset this page</button>
+      <div class="speech-actions"><button id="speak" class="secondary">Read selected text aloud</button><button id="pauseSpeech" class="ghost">Pause</button><button id="resumeSpeech" class="ghost">Resume</button></div><button id="setup" class="ghost wide">Open your Under Progress profile</button><button id="reset" class="ghost wide">Reset this page</button>
       <p class="note">Your default and saved presets stay in browser storage. You can change disability choices on the website, and edit display controls here whenever you need.</p>
     </main>
     <script src="popup.js"></script>

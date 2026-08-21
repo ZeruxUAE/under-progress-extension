@@ -29,6 +29,9 @@ byId("savePreset").addEventListener("click", savePreset);
 byId("applyPreset").addEventListener("click", applyPreset);
 byId("deletePreset").addEventListener("click", deletePreset);
 byId("setDefault").addEventListener("change", setDefaultPreset);
-byId("speak").addEventListener("click", async () => { const tab = await activeTab(); if (!tab?.id) return setApplyStatus("Open a normal website first, then try again.", true); const result = await chrome.runtime.sendMessage({ type: "speak-active-tab", tabId: tab.id }); setApplyStatus(result?.applied ? "Reading the selected text or page aloud." : (result?.error || "No readable text was found."), !result?.applied); });
+async function speechAction(type, success) { const tab = await activeTab(); if (!tab?.id) return setApplyStatus("Open a normal website first, then try again.", true); const result = await chrome.runtime.sendMessage({ type, tabId: tab.id }); setApplyStatus(result?.applied ? success : (result?.error || "No reading action could be completed."), !result?.applied); }
+byId("speak").addEventListener("click", () => speechAction("speak-active-tab", "Reading the selected text or page aloud."));
+byId("pauseSpeech").addEventListener("click", () => speechAction("pause-active-tab", "Reading paused. Press Resume when you are ready."));
+byId("resumeSpeech").addEventListener("click", () => speechAction("resume-active-tab", "Reading resumed."));
 byId("setup").addEventListener("click", () => chrome.tabs.create({ url: "https://under-progress-psi.vercel.app/setup" }));
 byId("reset").addEventListener("click", async () => { writeControls(defaults); await chrome.storage.sync.set({ underProgress: defaults }); await apply(defaults); });
