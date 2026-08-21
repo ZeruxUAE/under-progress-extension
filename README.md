@@ -1,6 +1,10 @@
 # Under Progress Browser Extension
 
-This is the standalone Chrome and Microsoft Edge extension for **Under Progress**. It gives people direct, reversible tools for the page they are currently visiting: text scaling, line spacing, reading width, high contrast, focus mode, and text-to-speech.
+This is the standalone Chrome and Microsoft Edge extension for **Under Progress**. It gives people direct, reversible tools for the page they are currently visiting: text scaling, line spacing, reading width, high contrast, focus mode, text-to-speech, and persistent saved presets.
+
+## Download
+
+Download the latest release from [GitHub Releases](https://github.com/ZeruxUAE/under-progress-extension/releases/latest). Extract the ZIP before following the installation steps below.
 
 ## Install in Chrome or Microsoft Edge
 
@@ -12,11 +16,11 @@ This is the standalone Chrome and Microsoft Edge extension for **Under Progress*
 
 ## How it works
 
-Settings are saved in the browser’s built-in extension storage and applied only as a display layer in the active tab. The original website is not permanently modified. Use **Reset this page** in the popup to return the extension controls to their default values.
+Settings are saved in the browser’s built-in extension storage and applied only as a display layer in the active tab. The original website is not permanently modified. Use the popup to save several named presets or set one preset as the default that opens again after the browser closes. Use **Reset this page** to restore the standard display controls.
 
 ## Website connection
 
-With the extension installed, open the Under Progress profile at `https://under-progress-psi.vercel.app/setup` in the same browser. Select **Connect extension** to import the extension’s current controls, or save the profile to send its text, spacing, contrast, and focus choices to the extension. The bridge uses only in-browser messages and Chrome/Edge extension storage; it does not send profile data to an external server.
+With the extension installed, refresh `https://under-progress-psi.vercel.app/setup` once in the same browser. Then select **Connect extension** to import the extension’s current controls, or save the profile to send its text, spacing, contrast, focus choices, multiple disability selections, and default-preset name to the extension. The setup page now retries the connection automatically for several seconds instead of treating a newly installed extension as missing. The bridge uses only in-browser messages and Chrome/Edge extension storage; it does not send profile data to an external server.
 
 If the Under Progress website moves to a custom domain later, update the `WEBSITE_ORIGINS` array in `content.js` before loading the extension.
 
