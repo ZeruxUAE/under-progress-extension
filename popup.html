@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="popup.css" />
+    <title>Under Progress</title>
+  </head>
+  <body>
+    <main class="popup-shell">
+      <header><div class="mark"><span></span><span></span></div><div><p class="eyebrow">Under Progress</p><h1>Make this page easier to meet.</h1></div></header>
+      <p class="intro">Adjust this page now, then save the controls as a preset you can use again after the browser closes.</p>
+      <section class="preset-panel" aria-labelledby="preset-title">
+        <div class="preset-heading"><span id="preset-title">Saved presets</span><span id="presetStatus" aria-live="polite">No preset selected</span></div>
+        <label class="select-label" for="presetSelect">Choose a preset</label><select id="presetSelect"><option value="">No saved presets yet</option></select>
+        <div class="preset-actions"><button id="applyPreset" class="compact secondary" disabled>Use preset</button><button id="deletePreset" class="compact ghost" disabled>Delete</button></div>
+        <label class="default-choice"><input id="setDefault" type="checkbox" /><span><b>Set as my default</b><small>Use this preset whenever the browser reopens.</small></span></label>
+        <label class="select-label" for="presetName">Save current controls as</label><div class="save-row"><input id="presetName" maxlength="40" placeholder="For example: Reading mode" /><button id="savePreset" class="compact secondary">Save</button></div>
+      </section>
+      <section class="control-group"><label for="textScale">Text size <output id="textScaleValue">100%</output></label><input id="textScale" type="range" min="90" max="160" step="5" value="100" /></section>
+      <section class="control-group"><label for="lineSpacing">Line spacing <output id="lineSpacingValue">1.5×</output></label><input id="lineSpacing" type="range" min="1.2" max="2" step="0.1" value="1.5" /></section>
+      <section class="control-group"><label for="readingWidth">Reading width <output id="readingWidthValue">70ch</output></label><input id="readingWidth" type="range" min="45" max="90" step="5" value="70" /></section>
+      <section class="toggles"><label class="toggle"><span><b>High contrast</b><small>Increase page contrast</small></span><input id="contrast" type="checkbox" /><i></i></label><label class="toggle"><span><b>Focus mode</b><small>Dim content outside reading</small></span><input id="focus" type="checkbox" /><i></i></label></section>
+      <button id="speak" class="secondary">Read selected text aloud</button><button id="setup" class="ghost wide">Open your Under Progress profile</button><button id="reset" class="ghost wide">Reset this page</button>
+      <p class="note">Your default and saved presets stay in browser storage. You can change disability choices on the website, and edit display controls here whenever you need.</p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
