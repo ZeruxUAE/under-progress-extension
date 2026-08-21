@@ -8,6 +8,8 @@ const listeners = {};
 const storageListeners = [];
 let storedSettings;
 let storedProfile;
+let storedPresets;
+let storedDefaultPreset;
 const root = { style: { values: {}, setProperty(key, value) { this.values[key] = value; } }, dataset: {} };
 const speech = { speaking: false, paused: false, starts: 0, cancel() { this.speaking = false; this.paused = false; }, speak() { this.speaking = true; this.paused = false; this.starts += 1; }, pause() { this.paused = true; }, resume() { this.paused = false; } };
 const windowMock = {
@@ -21,12 +23,15 @@ const chromeMock = {
   runtime: { onMessage: { addListener(callback) { listeners.runtime = callback; } } },
   storage: {
     sync: {
-      get(_key, callback) { callback({ underProgress: storedSettings, underProgressProfile: storedProfile }); },
-      set(values) {
+      get(_key, callback) { callback({ underProgress: storedSettings, underProgressProfile: storedProfile, underProgressPresets: storedPresets, underProgressDefaultPreset: storedDefaultPreset }); },
+      set(values, callback) {
         const changes = {};
         if ("underProgress" in values) { storedSettings = values.underProgress; changes.underProgress = { newValue: storedSettings }; }
         if ("underProgressProfile" in values) { storedProfile = values.underProgressProfile; changes.underProgressProfile = { newValue: storedProfile }; }
+        if ("underProgressPresets" in values) { storedPresets = values.underProgressPresets; changes.underProgressPresets = { newValue: storedPresets }; }
+        if ("underProgressDefaultPreset" in values) { storedDefaultPreset = values.underProgressDefaultPreset; changes.underProgressDefaultPreset = { newValue: storedDefaultPreset }; }
         storageListeners.forEach((callback) => callback(changes, "sync"));
+        callback?.();
       },
     },
     onChanged: { addListener(callback) { storageListeners.push(callback); } },
@@ -43,8 +48,10 @@ const savedProfile = { displayName: "Alex", disabilities: ["adhd", "dyslexia"], 
 listeners.message({ origin: windowMock.location.origin, source: windowMock, data: { source: "under-progress-website", type: "save-profile", settings: savedFromWebsite, profile: savedProfile } });
 assert.equal(JSON.stringify(storedSettings), JSON.stringify(savedFromWebsite), "Website settings are persisted by the extension.");
 assert.equal(JSON.stringify(storedProfile), JSON.stringify(savedProfile), "Multiple disability selections and the default preset name are stored with the extension profile.");
-assert.equal(root.dataset.upContrast, "true", "Saved contrast is applied to the active page.");
-assert.equal(root.dataset.upFocus, "true", "Saved focus mode is applied to the active page.");
+assert.equal(root.dataset.upContrast, undefined, "Website setup keeps global page styling unchanged.");
+assert.equal(root.dataset.upFocus, undefined, "Website setup never applies the extension focus overlay to the full page.");
+assert.equal(storedDefaultPreset, "website-default", "The website preset becomes the extension default.");
+assert.equal(storedPresets.at(-1).name, "Everyday reading", "The named website preset is saved in the extension preset list.");
 
 listeners.message({ origin: windowMock.location.origin, source: windowMock, data: { source: "under-progress-website", type: "request-profile" } });
 assert.ok(posted.some(({ message }) => message.type === "extension-profile" && message.settings.textScale === 120 && message.profile.disabilities.length === 2), "The extension returns settings and multiple disability selections to the website.");
