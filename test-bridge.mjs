@@ -11,7 +11,7 @@ let storedProfile;
 let storedPresets;
 let storedDefaultPreset;
 const root = { style: { values: {}, setProperty(key, value) { this.values[key] = value; } }, dataset: {} };
-const speech = { speaking: false, paused: false, starts: 0, cancel() { this.speaking = false; this.paused = false; }, speak() { this.speaking = true; this.paused = false; this.starts += 1; }, pause() { this.paused = true; }, resume() { this.paused = false; } };
+const speech = { speaking: false, paused: false, starts: 0, lastUtterance: null, cancel() { this.speaking = false; this.paused = false; }, speak(utterance) { this.speaking = true; this.paused = false; this.starts += 1; this.lastUtterance = utterance; }, pause() { this.paused = true; }, resume() { this.paused = false; }, getVoices() { return [{ lang: "ar-AE", name: "Arabic test voice" }]; } };
 const windowMock = {
   location: { origin: "https://under-progress-psi.vercel.app", hostname: "under-progress-psi.vercel.app" },
   postMessage(message, origin) { posted.push({ message, origin }); },
@@ -53,10 +53,15 @@ assert.equal(root.dataset.upFocus, undefined, "Website setup never applies the e
 assert.equal(storedDefaultPreset, "website-default", "The website preset becomes the extension default.");
 assert.equal(storedPresets.at(-1).name, "Everyday reading", "The named website preset is saved in the extension preset list.");
 
+listeners.message({ origin: windowMock.location.origin, source: windowMock, data: { source: "under-progress-website", type: "set-language", language: "ar-AE" } });
+assert.equal(storedProfile.language, "ar-AE", "The selected website language is stored without changing display settings.");
+
 listeners.message({ origin: windowMock.location.origin, source: windowMock, data: { source: "under-progress-website", type: "request-profile" } });
 assert.ok(posted.some(({ message }) => message.type === "extension-profile" && message.settings.textScale === 120 && message.profile.disabilities.length === 2), "The extension returns settings and multiple disability selections to the website.");
 let speakResponse; listeners.runtime({ type: "speak" }, null, response => { speakResponse = response; });
 assert.equal(speakResponse.applied, true, "Read-aloud starts when text is available.");
+assert.equal(speakResponse.language, "ar-AE", "Read-aloud reports the selected preferred language.");
+assert.equal(speech.lastUtterance.lang, "ar-AE", "Read-aloud applies the selected language to the speech utterance.");
 let pauseResponse; listeners.runtime({ type: "pause-speech" }, null, response => { pauseResponse = response; });
 assert.equal(pauseResponse.applied, true, "Read-aloud can be paused.");
 assert.equal(speech.paused, true, "Speech state records the pause.");
