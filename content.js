@@ -42,6 +42,7 @@ if (extensionContextAvailable()) {
     if (!message) return;
     if (message.type === "ping") { sendResponse?.({ ready: true }); return; }
     if (message.type === "apply") { apply(message.state); sendResponse?.({ applied: true }); return; }
+    if (message.type === "voice-status") { const language = typeof message.language === "string" ? message.language : ""; Promise.all([waitForVoice(language), extensionVoiceSupport(language)]).then(([pageVoice, extensionVoice]) => sendResponse?.({ applied: Boolean(pageVoice || extensionVoice?.available), language, voiceLanguage: pageVoice?.lang || extensionVoice?.voiceLanguage, engine: pageVoice ? "page" : extensionVoice?.available ? "extension" : undefined, voiceSetup: Boolean(language && !pageVoice && !extensionVoice?.available) })); return true; }
     if (message.type === "speak") {
       const selected = window.getSelection()?.toString().trim();
       const fallback = document.querySelector("main, article, [role=main]")?.innerText?.slice(0, 1800) || document.body.innerText.slice(0, 1800);

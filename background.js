@@ -69,6 +69,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       await chrome.tabs.sendMessage(message.tabId, { type: "apply", state: message.state });
       return sendResponse({ applied: true, injected: Boolean(bridge.injected) });
     }
+    if (message.type === "voice-status-active-tab") {
+      const response = await chrome.tabs.sendMessage(message.tabId, { type: "voice-status", language: message.language });
+      return sendResponse({ ...response, injected: Boolean(bridge.injected) });
+    }
     if (message.type === "speak-active-tab" || message.type === "pause-active-tab" || message.type === "resume-active-tab") {
       const type = message.type === "speak-active-tab" ? "speak" : message.type === "pause-active-tab" ? "pause-speech" : "resume-speech";
       const response = await chrome.tabs.sendMessage(message.tabId, { type });

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Under Progress",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "description": "User-controlled reading, focus, contrast, and listening tools for the current webpage.",
   "permissions": ["storage", "activeTab", "scripting", "tabs", "tts"],
   "host_permissions": ["<all_urls>"],

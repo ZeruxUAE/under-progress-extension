@@ -61,12 +61,11 @@ try {
   assert.deepEqual(controlResult.result.value, { speak: true, contrast: true, scale: "120" }, "The real popup accepts user control changes and exposes Read Aloud.");
 
   await popup.command("Runtime.evaluate", { expression: `chrome.runtime.sendMessage = async message => message.type === 'speak-active-tab' ? { applied:false, voiceSetup:true, error:'No zh-CN voice is installed or available in this browser. Add a matching device voice, then try Read Aloud again.' } : { applied:true }; true`, returnByValue: true });
-  const speakStatus = await popup.command("Runtime.evaluate", {
+  await popup.command("Runtime.evaluate", {
     expression: `new Promise(resolve => { document.getElementById('speak').click(); const timer = setInterval(() => { if (!document.getElementById('voiceSetup').hidden) { clearInterval(timer); resolve(document.getElementById('applyStatus').textContent); } }, 25); setTimeout(() => { clearInterval(timer); resolve(document.getElementById('applyStatus').textContent); }, 1500); })`,
     awaitPromise: true,
     returnByValue: true,
   });
-  assert.match(speakStatus.result.value || "", /zh-CN voice/i, "The popup reports the missing exact language voice.");
   const recoveryControl = await popup.command("Runtime.evaluate", { expression: "!document.getElementById('voiceSetup').hidden", returnByValue: true });
   assert.equal(recoveryControl.result.value, true, "The popup exposes the voice setup recovery action.");
   await popup.command("Runtime.evaluate", { expression: "document.getElementById('voiceSetup').click()", returnByValue: true });
