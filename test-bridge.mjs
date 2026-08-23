@@ -11,6 +11,7 @@ let storedProfile;
 let storedPresets;
 let storedDefaultPreset;
 let storedSpeechLanguage;
+let storageGetCalls = 0;
 const root = { style: { values: {}, setProperty(key, value) { this.values[key] = value; } }, dataset: {} };
 const speech = { speaking: false, paused: false, starts: 0, lastUtterance: null, cancel() { this.speaking = false; this.paused = false; }, speak(utterance) { this.speaking = true; this.paused = false; this.starts += 1; this.lastUtterance = utterance; }, pause() { this.paused = true; }, resume() { this.paused = false; }, getVoices() { return [{ lang: "ar-AE", name: "Arabic test voice" }, { lang: "zh-CN", name: "Chinese test voice" }]; } };
 const windowMock = {
@@ -21,10 +22,10 @@ const windowMock = {
   speechSynthesis: speech,
 };
 const chromeMock = {
-  runtime: { onMessage: { addListener(callback) { listeners.runtime = callback; } } },
+  runtime: { id: "under-progress-test", onMessage: { addListener(callback) { listeners.runtime = callback; } } },
   storage: {
     sync: {
-      get(_key, callback) { callback({ underProgress: storedSettings, underProgressProfile: storedProfile, underProgressPresets: storedPresets, underProgressDefaultPreset: storedDefaultPreset, underProgressSpeechLanguage: storedSpeechLanguage }); },
+      get(_key, callback) { storageGetCalls += 1; callback({ underProgress: storedSettings, underProgressProfile: storedProfile, underProgressPresets: storedPresets, underProgressDefaultPreset: storedDefaultPreset, underProgressSpeechLanguage: storedSpeechLanguage }); },
       set(values, callback) {
         const changes = {};
         if ("underProgress" in values) { storedSettings = values.underProgress; changes.underProgress = { newValue: storedSettings }; }
@@ -77,4 +78,9 @@ assert.equal(speech.paused, true, "Speech state records the pause.");
 let resumeResponse; listeners.runtime({ type: "resume-speech" }, null, response => { resumeResponse = response; });
 assert.equal(resumeResponse.applied, true, "Read-aloud can be resumed.");
 assert.equal(speech.paused, false, "Speech state clears after resume.");
+const getsBeforeInvalidation = storageGetCalls;
+delete chromeMock.runtime.id;
+listeners.message({ origin: windowMock.location.origin, source: windowMock, data: { source: "under-progress-website", type: "request-profile" } });
+assert.equal(storageGetCalls, getsBeforeInvalidation, "A stale content script does not call extension storage after its context is invalidated.");
+assert.ok(posted.some(({ message }) => message.type === "connection-unavailable" && message.reason === "extension-reloaded"), "A stale content script reports a recoverable reload state instead of throwing.");
 console.log("Under Progress extension bridge checks passed.");
