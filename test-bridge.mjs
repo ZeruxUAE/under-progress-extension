@@ -12,7 +12,7 @@ let storedPresets;
 let storedDefaultPreset;
 let storedSpeechLanguage;
 const root = { style: { values: {}, setProperty(key, value) { this.values[key] = value; } }, dataset: {} };
-const speech = { speaking: false, paused: false, starts: 0, lastUtterance: null, cancel() { this.speaking = false; this.paused = false; }, speak(utterance) { this.speaking = true; this.paused = false; this.starts += 1; this.lastUtterance = utterance; }, pause() { this.paused = true; }, resume() { this.paused = false; }, getVoices() { return [{ lang: "ar-AE", name: "Arabic test voice" }]; } };
+const speech = { speaking: false, paused: false, starts: 0, lastUtterance: null, cancel() { this.speaking = false; this.paused = false; }, speak(utterance) { this.speaking = true; this.paused = false; this.starts += 1; this.lastUtterance = utterance; }, pause() { this.paused = true; }, resume() { this.paused = false; }, getVoices() { return [{ lang: "ar-AE", name: "Arabic test voice" }, { lang: "zh-CN", name: "Chinese test voice" }]; } };
 const windowMock = {
   location: { origin: "https://under-progress-psi.vercel.app", hostname: "under-progress-psi.vercel.app" },
   postMessage(message, origin) { posted.push({ message, origin }); },
@@ -61,11 +61,16 @@ assert.equal(storedSpeechLanguage, "ar-AE", "The selected website language has i
 
 listeners.message({ origin: windowMock.location.origin, source: windowMock, data: { source: "under-progress-website", type: "request-profile" } });
 assert.ok(posted.some(({ message }) => message.type === "extension-profile" && message.settings.textScale === 120 && message.profile.disabilities.length === 2), "The extension returns settings and multiple disability selections to the website.");
-let speakResponse; listeners.runtime({ type: "speak" }, null, response => { speakResponse = response; });
+let speakResponse; listeners.runtime({ type: "speak" }, null, response => { speakResponse = response; }); await new Promise(resolve => setTimeout(resolve, 0));
 assert.equal(speakResponse.applied, true, "Read-aloud starts when text is available.");
 assert.equal(speakResponse.language, "ar-AE", "Read-aloud reports the selected preferred language.");
 assert.equal(speech.lastUtterance.lang, "ar-AE", "Read-aloud applies the selected language to the speech utterance.");
 assert.equal(speech.lastUtterance.voice?.lang, "ar-AE", "Read-aloud selects the matching installed voice instead of the browser default.");
+listeners.message({ origin: windowMock.location.origin, source: windowMock, data: { source: "under-progress-website", type: "set-language", language: "zh-CN" } });
+let chineseSpeakResponse; listeners.runtime({ type: "speak" }, null, response => { chineseSpeakResponse = response; }); await new Promise(resolve => setTimeout(resolve, 0));
+assert.equal(chineseSpeakResponse.language, "zh-CN", "Read-aloud reports the selected Chinese language.");
+assert.equal(speech.lastUtterance.lang, "zh-CN", "Read-aloud applies Chinese to the speech utterance instead of falling back to the browser default.");
+assert.equal(speech.lastUtterance.voice?.lang, "zh-CN", "Read-aloud selects the matching Chinese voice when it is available.");
 let pauseResponse; listeners.runtime({ type: "pause-speech" }, null, response => { pauseResponse = response; });
 assert.equal(pauseResponse.applied, true, "Read-aloud can be paused.");
 assert.equal(speech.paused, true, "Speech state records the pause.");

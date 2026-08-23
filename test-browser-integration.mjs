@@ -36,6 +36,10 @@ try {
   const inspection = await page.command("Runtime.evaluate", { expression: "JSON.stringify({contrast:document.documentElement.dataset.upContrast,focus:document.documentElement.dataset.upFocus,scale:getComputedStyle(document.documentElement).getPropertyValue('--up-text-scale').trim()})", returnByValue: true });
   const result = JSON.parse(inspection.result.value);
   assert.deepEqual(result, { contrast: "true", focus: "true", scale: "1.2" }, "Saved extension settings reach the live webpage.");
+  const chineseSpeech = await worker.command("Runtime.evaluate", { expression: `new Promise(resolve => chrome.tabs.query({}).then(async tabs => { const tab = tabs.find(item => typeof item.url === 'string' && item.url.includes('example.com')); await chrome.storage.sync.set({underProgressSpeechLanguage:'zh-CN',underProgressProfile:{language:'zh-CN'}}); const reply = await chrome.tabs.sendMessage(tab.id,{type:'speak'}); resolve(reply); }))`, awaitPromise: true, returnByValue: true });
+  assert.equal(chineseSpeech.result.value?.applied, false, "Headless Chromium does not silently use its default voice when Chinese is selected but unavailable.");
+  assert.equal(chineseSpeech.result.value?.language, "zh-CN", "The selected Chinese language reaches the actual extension content bridge.");
+  assert.match(chineseSpeech.result.value?.error || "", /zh-CN voice/, "The extension reports a clear matching-voice instruction instead of speaking in the default language.");
   console.log("Under Progress browser integration check passed.");
   page.close(); worker.close();
 } finally {
