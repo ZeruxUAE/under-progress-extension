@@ -13,6 +13,7 @@ let storedDefaultPreset;
 let storedSpeechLanguage;
 let storedTranslateBeforeSpeech;
 let translationRequest;
+const extensionVoiceRequests = [];
 let storageGetCalls = 0;
 const root = { style: { values: {}, setProperty(key, value) { this.values[key] = value; } }, dataset: {} };
 const speech = { speaking: false, paused: false, starts: 0, lastUtterance: null, cancel() { this.speaking = false; this.paused = false; }, speak(utterance) { this.speaking = true; this.paused = false; this.starts += 1; this.lastUtterance = utterance; }, pause() { this.paused = true; }, resume() { this.paused = false; }, getVoices() { return [{ lang: "ar-AE", name: "Arabic test voice" }, { lang: "zh-CN", name: "Chinese test voice" }]; } };
@@ -24,7 +25,7 @@ const windowMock = {
   speechSynthesis: speech,
 };
 const chromeMock = {
-  runtime: { id: "under-progress-test", onMessage: { addListener(callback) { listeners.runtime = callback; } }, sendMessage(message) { translationRequest = message; return Promise.resolve({ translatedText: String(message.target).startsWith("ar") ? "ينبغي أن يكون التعلم متاحاً." : "学习应该是无障碍的。", sourceLanguage: "en" }); } },
+  runtime: { id: "under-progress-test", onMessage: { addListener(callback) { listeners.runtime = callback; } }, sendMessage(message) { if (message.type === "get-tts-voice-support") return Promise.resolve({ available: true, language: message.language, voiceLanguage: message.language, voiceName: "Extension matching voice" }); if (message.type === "speak-with-extension-voice") { extensionVoiceRequests.push(message); return Promise.resolve({ applied: true, language: message.language, voiceLanguage: message.language, engine: "extension" }); } if (message.type === "pause-extension-voice" || message.type === "resume-extension-voice") return Promise.resolve({ applied: true, engine: "extension" }); translationRequest = message; return Promise.resolve({ translatedText: String(message.target).startsWith("ar") ? "ينبغي أن يكون التعلم متاحاً." : "学习应该是无障碍的。", sourceLanguage: "en" }); } },
   storage: {
     sync: {
       get(_key, callback) { storageGetCalls += 1; callback({ underProgress: storedSettings, underProgressProfile: storedProfile, underProgressPresets: storedPresets, underProgressDefaultPreset: storedDefaultPreset, underProgressSpeechLanguage: storedSpeechLanguage, underProgressTranslateBeforeSpeech: storedTranslateBeforeSpeech }); },
@@ -91,6 +92,12 @@ assert.equal(speech.paused, true, "Speech state records the pause.");
 let resumeResponse; listeners.runtime({ type: "resume-speech" }, null, response => { resumeResponse = response; });
 assert.equal(resumeResponse.applied, true, "Read-aloud can be resumed.");
 assert.equal(speech.paused, false, "Speech state clears after resume.");
+speech.getVoices = () => [];
+listeners.runtime({ type: "speak" }, null, response => { chineseSpeakResponse = response; }); await new Promise(resolve => setTimeout(resolve, 0));
+assert.equal(chineseSpeakResponse.applied, true, "Read-aloud recovers when an extension TTS voice matches the selected language.");
+assert.equal(chineseSpeakResponse.engine, "extension", "The recovery uses the matching extension voice rather than a browser-default voice.");
+assert.equal(extensionVoiceRequests.at(-1).language, "zh-CN", "The recovered speech keeps the exact selected language.");
+assert.equal(extensionVoiceRequests.at(-1).text, "学习应该是无障碍的。", "The recovered extension voice receives translated target-language text.");
 const getsBeforeInvalidation = storageGetCalls;
 delete chromeMock.runtime.id;
 listeners.message({ origin: windowMock.location.origin, source: windowMock, data: { source: "under-progress-website", type: "request-profile" } });

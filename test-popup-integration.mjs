@@ -52,26 +52,33 @@ try {
   }
   assert.ok(popupTarget, "The actual extension popup loads.");
   const popup = await connect(popupTarget.webSocketDebuggerUrl);
-  const worker = await connect(workerTarget.webSocketDebuggerUrl);
-  await worker.command("Runtime.evaluate", { expression: `chrome.tabs.query({}).then(tabs => { const tab = tabs.find(item => item.url?.includes('example.com')); return chrome.tabs.update(tab.id, { active: true }); })`, awaitPromise: true, returnByValue: true });
-  await browser.command("Target.activateTarget", { targetId: pageTarget.id });
   await sleep(1200);
 
   const controlResult = await popup.command("Runtime.evaluate", {
-    expression: `new Promise(resolve => { const contrast = document.getElementById('contrast'); contrast.checked = true; contrast.dispatchEvent(new Event('input', { bubbles: true })); setTimeout(() => { const scale = document.getElementById('textScale'); scale.value = '120'; scale.dispatchEvent(new Event('input', { bubbles: true })); setTimeout(() => resolve({ status: document.getElementById('applyStatus').textContent, speak: Boolean(document.getElementById('speak')), contrast: contrast.checked, scale: scale.value }), 700); }, 700); })`,
-    awaitPromise: true,
+    expression: `(() => { const contrast = document.getElementById('contrast'); contrast.checked = true; contrast.dispatchEvent(new Event('input', { bubbles: true })); const scale = document.getElementById('textScale'); scale.value = '120'; scale.dispatchEvent(new Event('input', { bubbles: true })); return { speak: Boolean(document.getElementById('speak')), contrast: contrast.checked, scale: scale.value }; })()`,
     returnByValue: true,
   });
-  assert.deepEqual(controlResult.result.value, { status: controlResult.result.value?.status, speak: true, contrast: true, scale: "120" }, "The real popup accepts user control changes and exposes Read Aloud.");
+  assert.deepEqual(controlResult.result.value, { speak: true, contrast: true, scale: "120" }, "The real popup accepts user control changes and exposes Read Aloud.");
 
+  await popup.command("Runtime.evaluate", { expression: `chrome.runtime.sendMessage = async message => message.type === 'speak-active-tab' ? { applied:false, voiceSetup:true, error:'No zh-CN voice is installed or available in this browser. Add a matching device voice, then try Read Aloud again.' } : { applied:true }; true`, returnByValue: true });
   const speakStatus = await popup.command("Runtime.evaluate", {
-    expression: `new Promise(resolve => { document.getElementById('speak').click(); setTimeout(() => resolve(document.getElementById('applyStatus').textContent), 900); })`,
+    expression: `new Promise(resolve => { document.getElementById('speak').click(); const timer = setInterval(() => { if (!document.getElementById('voiceSetup').hidden) { clearInterval(timer); resolve(document.getElementById('applyStatus').textContent); } }, 25); setTimeout(() => { clearInterval(timer); resolve(document.getElementById('applyStatus').textContent); }, 1500); })`,
     awaitPromise: true,
     returnByValue: true,
   });
-  assert.match(speakStatus.result.value || "", /Reading|voice|Read Aloud|text/i, "The popup Read Aloud action returns user-facing feedback.");
+  assert.match(speakStatus.result.value || "", /zh-CN voice/i, "The popup reports the missing exact language voice.");
+  const recoveryControl = await popup.command("Runtime.evaluate", { expression: "!document.getElementById('voiceSetup').hidden", returnByValue: true });
+  assert.equal(recoveryControl.result.value, true, "The popup exposes the voice setup recovery action.");
+  await popup.command("Runtime.evaluate", { expression: "document.getElementById('voiceSetup').click()", returnByValue: true });
+  let helpTarget;
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    await sleep(150);
+    helpTarget = (await targets()).find(target => target.type === "page" && target.url === `chrome-extension://${extensionId}/voice-help.html`);
+    if (helpTarget) break;
+  }
+  assert.ok(helpTarget, "The popup recovery action opens the in-extension language voice setup page.");
   console.log("Under Progress popup integration check passed.");
-  browser.close(); worker.close(); popup.close();
+  browser.close(); popup.close();
 } finally {
   child.kill("SIGTERM");
 }
