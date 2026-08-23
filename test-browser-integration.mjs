@@ -4,7 +4,7 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const debugPort = "9333";
-const extensionPath = "/home/ubuntu/under-progress-extension-release";
+const extensionPath = process.env.UNDER_PROGRESS_EXTENSION_PATH || "/home/ubuntu/under-progress-extension-release";
 const profilePath = "/tmp/under-progress-extension-test-profile";
 
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
