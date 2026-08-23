@@ -13,7 +13,21 @@ async function ensurePageBridge(tabId) {
   }
 }
 
+function truncateForFreeTranslation(text, limit = 430) { const encoder = new TextEncoder(); let output = ""; for (const character of String(text || "")) { if (encoder.encode(output + character).length > limit) break; output += character; } return output; }
+async function translateText(message) {
+  const target = String(message.target || "").trim();
+  const text = truncateForFreeTranslation(message.text);
+  if (!target || !text) return { translatedText: "", error: "Select readable text before using free translation." };
+  const query = new URLSearchParams({ q: text, langpair: `autodetect|${target}`, mt: "1" });
+  const response = await fetch(`https://api.mymemory.translated.net/get?${query}`);
+  if (!response.ok) return { translatedText: "", error: "The free translation service is temporarily unavailable. Try again later." };
+  const data = await response.json();
+  if (data.responseStatus !== 200 || !data.responseData?.translatedText) return { translatedText: "", error: data.responseDetails || "The free translation limit may have been reached. Try again later." };
+  return { translatedText: data.responseData.translatedText, sourceLanguage: data.responseData.detectedLanguage || "" };
+}
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type === "translate-text") { translateText(message).then(sendResponse).catch(() => sendResponse({ translatedText: "", error: "The free translation service is unavailable. Try again later." })); return true; }
   if (!message?.tabId) return;
   (async () => {
     const bridge = await ensurePageBridge(message.tabId);

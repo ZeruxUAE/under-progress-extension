@@ -26,4 +26,4 @@ If the Under Progress website moves to a custom domain later, update the `WEBSIT
 
 ## Browser permissions
 
-The extension requests only the permissions needed to work: access to the active tab, scripting access for display adjustments, and browser storage for a user’s saved preferences. It does not send profile settings or page content to an external server.
+The extension requests only the permissions needed to work: access to the active tab, scripting access for display adjustments, and browser storage for a user’s saved preferences. Profiles are never sent to an external server. **Free translation is optional:** if you turn on **Translate before speaking**, the short selected text you ask to read (up to 430 characters) is sent to the MyMemory translation service before the extension speaks it in your saved language. The service is not used when that toggle is off.
