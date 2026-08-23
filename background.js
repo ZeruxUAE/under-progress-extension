@@ -26,7 +26,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       const type = message.type === "speak-active-tab" ? "speak" : message.type === "pause-active-tab" ? "pause-speech" : "resume-speech";
       const response = await chrome.tabs.sendMessage(message.tabId, { type });
       if (response?.applied === false) return sendResponse({ applied: false, error: response.error || "No active reading was found." });
-      return sendResponse({ applied: true, injected: Boolean(bridge.injected) });
+      return sendResponse({ ...response, applied: true, injected: Boolean(bridge.injected) });
     }
     return sendResponse({ applied: false, error: "Unsupported extension action." });
   })().catch((error) => sendResponse({ applied: false, error: error instanceof Error ? error.message : "Unable to apply this setting." }));

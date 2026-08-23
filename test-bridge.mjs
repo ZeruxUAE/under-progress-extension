@@ -10,6 +10,7 @@ let storedSettings;
 let storedProfile;
 let storedPresets;
 let storedDefaultPreset;
+let storedSpeechLanguage;
 const root = { style: { values: {}, setProperty(key, value) { this.values[key] = value; } }, dataset: {} };
 const speech = { speaking: false, paused: false, starts: 0, lastUtterance: null, cancel() { this.speaking = false; this.paused = false; }, speak(utterance) { this.speaking = true; this.paused = false; this.starts += 1; this.lastUtterance = utterance; }, pause() { this.paused = true; }, resume() { this.paused = false; }, getVoices() { return [{ lang: "ar-AE", name: "Arabic test voice" }]; } };
 const windowMock = {
@@ -23,13 +24,14 @@ const chromeMock = {
   runtime: { onMessage: { addListener(callback) { listeners.runtime = callback; } } },
   storage: {
     sync: {
-      get(_key, callback) { callback({ underProgress: storedSettings, underProgressProfile: storedProfile, underProgressPresets: storedPresets, underProgressDefaultPreset: storedDefaultPreset }); },
+      get(_key, callback) { callback({ underProgress: storedSettings, underProgressProfile: storedProfile, underProgressPresets: storedPresets, underProgressDefaultPreset: storedDefaultPreset, underProgressSpeechLanguage: storedSpeechLanguage }); },
       set(values, callback) {
         const changes = {};
         if ("underProgress" in values) { storedSettings = values.underProgress; changes.underProgress = { newValue: storedSettings }; }
         if ("underProgressProfile" in values) { storedProfile = values.underProgressProfile; changes.underProgressProfile = { newValue: storedProfile }; }
         if ("underProgressPresets" in values) { storedPresets = values.underProgressPresets; changes.underProgressPresets = { newValue: storedPresets }; }
         if ("underProgressDefaultPreset" in values) { storedDefaultPreset = values.underProgressDefaultPreset; changes.underProgressDefaultPreset = { newValue: storedDefaultPreset }; }
+        if ("underProgressSpeechLanguage" in values) { storedSpeechLanguage = values.underProgressSpeechLanguage; changes.underProgressSpeechLanguage = { newValue: storedSpeechLanguage }; }
         storageListeners.forEach((callback) => callback(changes, "sync"));
         callback?.();
       },
@@ -55,6 +57,7 @@ assert.equal(storedPresets.at(-1).name, "Everyday reading", "The named website p
 
 listeners.message({ origin: windowMock.location.origin, source: windowMock, data: { source: "under-progress-website", type: "set-language", language: "ar-AE" } });
 assert.equal(storedProfile.language, "ar-AE", "The selected website language is stored without changing display settings.");
+assert.equal(storedSpeechLanguage, "ar-AE", "The selected website language has its own extension speech preference for Read Aloud.");
 
 listeners.message({ origin: windowMock.location.origin, source: windowMock, data: { source: "under-progress-website", type: "request-profile" } });
 assert.ok(posted.some(({ message }) => message.type === "extension-profile" && message.settings.textScale === 120 && message.profile.disabilities.length === 2), "The extension returns settings and multiple disability selections to the website.");
@@ -62,6 +65,7 @@ let speakResponse; listeners.runtime({ type: "speak" }, null, response => { spea
 assert.equal(speakResponse.applied, true, "Read-aloud starts when text is available.");
 assert.equal(speakResponse.language, "ar-AE", "Read-aloud reports the selected preferred language.");
 assert.equal(speech.lastUtterance.lang, "ar-AE", "Read-aloud applies the selected language to the speech utterance.");
+assert.equal(speech.lastUtterance.voice?.lang, "ar-AE", "Read-aloud selects the matching installed voice instead of the browser default.");
 let pauseResponse; listeners.runtime({ type: "pause-speech" }, null, response => { pauseResponse = response; });
 assert.equal(pauseResponse.applied, true, "Read-aloud can be paused.");
 assert.equal(speech.paused, true, "Speech state records the pause.");

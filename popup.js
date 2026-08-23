@@ -29,7 +29,7 @@ byId("savePreset").addEventListener("click", savePreset);
 byId("applyPreset").addEventListener("click", applyPreset);
 byId("deletePreset").addEventListener("click", deletePreset);
 byId("setDefault").addEventListener("change", setDefaultPreset);
-async function speechAction(type, success) { const tab = await activeTab(); if (!tab?.id) return setApplyStatus("Open a normal website first, then try again.", true); const result = await chrome.runtime.sendMessage({ type, tabId: tab.id }); setApplyStatus(result?.applied ? success : (result?.error || "No reading action could be completed."), !result?.applied); }
+async function speechAction(type, success) { const tab = await activeTab(); if (!tab?.id) return setApplyStatus("Open a normal website first, then try again.", true); const result = await chrome.runtime.sendMessage({ type, tabId: tab.id }); if (!result?.applied) return setApplyStatus(result?.error || "No reading action could be completed.", true); if (type === "speak-active-tab" && result.language) return setApplyStatus(result.usedFallbackVoice ? `${success} ${result.language} is selected, but this device has no matching voice, so the browser is using its closest available voice.` : `${success} Using the saved ${result.language} voice.`); setApplyStatus(success); }
 byId("speak").addEventListener("click", () => speechAction("speak-active-tab", "Reading the selected text or page aloud."));
 byId("pauseSpeech").addEventListener("click", () => speechAction("pause-active-tab", "Reading paused. Press Resume when you are ready."));
 byId("resumeSpeech").addEventListener("click", () => speechAction("resume-active-tab", "Reading resumed."));
