@@ -13,6 +13,35 @@ async function ensurePageBridge(tabId) {
   }
 }
 
+function languageBase(language) { return String(language || "").toLowerCase().split("-")[0]; }
+async function matchingExtensionVoice(language) {
+  if (!language || !chrome.tts?.getVoices) return null;
+  const voices = await chrome.tts.getVoices();
+  const requested = String(language).toLowerCase();
+  return voices.find(voice => voice.lang?.toLowerCase() === requested) || voices.find(voice => languageBase(voice.lang) === languageBase(language)) || null;
+}
+async function extensionVoiceSupport(language) {
+  try {
+    const voice = await matchingExtensionVoice(language);
+    return { available: Boolean(voice), language, voiceLanguage: voice?.lang, voiceName: voice?.voiceName };
+  } catch {
+    return { available: false, language };
+  }
+}
+async function speakWithExtensionVoice(message) {
+  const language = String(message.language || "");
+  const text = String(message.text || "").trim();
+  if (!text) return { applied: false, error: "No readable text was found." };
+  const support = await extensionVoiceSupport(language);
+  if (!support.available) return { applied: false, language, voiceSetup: true, error: `No ${language} voice is installed or available in this browser. Add a matching device voice, then try Read Aloud again.` };
+  try {
+    await chrome.tts.speak(text, { lang: language, voiceName: support.voiceName });
+    return { applied: true, language, voiceLanguage: support.voiceLanguage, engine: "extension" };
+  } catch (error) {
+    return { applied: false, language, voiceSetup: true, error: error instanceof Error ? error.message : "The matching browser voice could not start. Add or enable the voice, then try again." };
+  }
+}
+
 function truncateForFreeTranslation(text, limit = 430) { const encoder = new TextEncoder(); let output = ""; for (const character of String(text || "")) { if (encoder.encode(output + character).length > limit) break; output += character; } return output; }
 async function translateText(message) {
   const target = String(message.target || "").trim();
@@ -27,6 +56,10 @@ async function translateText(message) {
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type === "get-tts-voice-support") { extensionVoiceSupport(message.language).then(sendResponse); return true; }
+  if (message?.type === "speak-with-extension-voice") { speakWithExtensionVoice(message).then(sendResponse); return true; }
+  if (message?.type === "pause-extension-voice") { chrome.tts?.pause?.(); sendResponse({ applied: true, engine: "extension" }); return; }
+  if (message?.type === "resume-extension-voice") { chrome.tts?.resume?.(); sendResponse({ applied: true, engine: "extension" }); return; }
   if (message?.type === "translate-text") { translateText(message).then(sendResponse).catch(() => sendResponse({ translatedText: "", error: "The free translation service is unavailable. Try again later." })); return true; }
   if (!message?.tabId) return;
   (async () => {
@@ -39,7 +72,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message.type === "speak-active-tab" || message.type === "pause-active-tab" || message.type === "resume-active-tab") {
       const type = message.type === "speak-active-tab" ? "speak" : message.type === "pause-active-tab" ? "pause-speech" : "resume-speech";
       const response = await chrome.tabs.sendMessage(message.tabId, { type });
-      if (response?.applied === false) return sendResponse({ applied: false, error: response.error || "No active reading was found." });
+      if (response?.applied === false) return sendResponse({ ...response, applied: false, error: response.error || "No active reading was found." });
       return sendResponse({ ...response, applied: true, injected: Boolean(bridge.injected) });
     }
     return sendResponse({ applied: false, error: "Unsupported extension action." });

@@ -24,6 +24,12 @@ With the extension installed, refresh `https://under-progress-psi.vercel.app/set
 
 If the Under Progress website moves to a custom domain later, update the `WEBSITE_ORIGINS` array in `content.js` before loading the extension.
 
+## Read Aloud and language voices
+
+Read Aloud uses only a voice that matches the language selected in Under Progress. This avoids having English text read with an unrelated accent or using the browser’s default language without the person’s consent. The extension first checks browser-page voices and then Chrome/Edge extension voices. If neither has a match, the popup shows **Set up a language voice**. On Windows, open the button and follow the device steps to add the selected language under **Settings → Speech → Manage voices → Add voices**, then restart the browser. The extension will not silently substitute a different-language voice.
+
+For a page written in a different language from the saved voice, turn on **Translate before speaking** before reading selected text. This optional feature is limited to 430 characters and uses the free MyMemory service only for the text explicitly selected for speech.
+
 ## Browser permissions
 
-The extension requests only the permissions needed to work: access to the active tab, scripting access for display adjustments, and browser storage for a user’s saved preferences. Profiles are never sent to an external server. **Free translation is optional:** if you turn on **Translate before speaking**, the short selected text you ask to read (up to 430 characters) is sent to the MyMemory translation service before the extension speaks it in your saved language. The service is not used when that toggle is off.
+The extension requests only the permissions needed to work: access to the active tab, scripting access for display adjustments, browser storage for saved preferences, and browser text-to-speech access for matching language voices. Profiles are never sent to an external server. **Free translation is optional:** if you turn on **Translate before speaking**, the short selected text you ask to read (up to 430 characters) is sent to the MyMemory translation service before the extension speaks it in your saved language. The service is not used when that toggle is off.
