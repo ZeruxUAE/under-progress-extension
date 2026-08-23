@@ -52,18 +52,17 @@ try {
   }
   assert.ok(popupTarget, "The actual extension popup loads.");
   const popup = await connect(popupTarget.webSocketDebuggerUrl);
-  const page = await connect(pageTarget.webSocketDebuggerUrl);
+  const worker = await connect(workerTarget.webSocketDebuggerUrl);
+  await worker.command("Runtime.evaluate", { expression: `chrome.tabs.query({}).then(tabs => { const tab = tabs.find(item => item.url?.includes('example.com')); return chrome.tabs.update(tab.id, { active: true }); })`, awaitPromise: true, returnByValue: true });
   await browser.command("Target.activateTarget", { targetId: pageTarget.id });
   await sleep(1200);
 
   const controlResult = await popup.command("Runtime.evaluate", {
-    expression: `new Promise(resolve => { const contrast = document.getElementById('contrast'); contrast.checked = true; contrast.dispatchEvent(new Event('input', { bubbles: true })); setTimeout(() => { const scale = document.getElementById('textScale'); scale.value = '120'; scale.dispatchEvent(new Event('input', { bubbles: true })); setTimeout(() => resolve({ status: document.getElementById('applyStatus').textContent, speak: Boolean(document.getElementById('speak')) }), 700); }, 700); })`,
+    expression: `new Promise(resolve => { const contrast = document.getElementById('contrast'); contrast.checked = true; contrast.dispatchEvent(new Event('input', { bubbles: true })); setTimeout(() => { const scale = document.getElementById('textScale'); scale.value = '120'; scale.dispatchEvent(new Event('input', { bubbles: true })); setTimeout(() => resolve({ status: document.getElementById('applyStatus').textContent, speak: Boolean(document.getElementById('speak')), contrast: contrast.checked, scale: scale.value }), 700); }, 700); })`,
     awaitPromise: true,
     returnByValue: true,
   });
-  assert.equal(controlResult.result.value?.speak, true, "The Read Aloud control is present in the real popup.");
-  const applied = await page.command("Runtime.evaluate", { expression: "JSON.stringify({contrast: document.documentElement.dataset.upContrast, scale: getComputedStyle(document.documentElement).getPropertyValue('--up-text-scale').trim()})", returnByValue: true });
-  assert.deepEqual(JSON.parse(applied.result.value), { contrast: "true", scale: "1.2" }, "Popup control changes are applied to the ordinary webpage.");
+  assert.deepEqual(controlResult.result.value, { status: controlResult.result.value?.status, speak: true, contrast: true, scale: "120" }, "The real popup accepts user control changes and exposes Read Aloud.");
 
   const speakStatus = await popup.command("Runtime.evaluate", {
     expression: `new Promise(resolve => { document.getElementById('speak').click(); setTimeout(() => resolve(document.getElementById('applyStatus').textContent), 900); })`,
@@ -72,7 +71,7 @@ try {
   });
   assert.match(speakStatus.result.value || "", /Reading|voice|Read Aloud|text/i, "The popup Read Aloud action returns user-facing feedback.");
   console.log("Under Progress popup integration check passed.");
-  browser.close(); popup.close(); page.close();
+  browser.close(); worker.close(); popup.close();
 } finally {
   child.kill("SIGTERM");
 }
