@@ -12,6 +12,8 @@ let storedPresets;
 let storedDefaultPreset;
 let storedSpeechLanguage;
 let storedTranslateBeforeSpeech;
+let storedSpeechRate = 0.7;
+let storedSpeechPitch = 0.8;
 let translationRequest;
 const extensionVoiceRequests = [];
 let storageGetCalls = 0;
@@ -28,7 +30,7 @@ const chromeMock = {
   runtime: { id: "under-progress-test", onMessage: { addListener(callback) { listeners.runtime = callback; } }, sendMessage(message) { if (message.type === "get-tts-voice-support") return Promise.resolve({ available: true, language: message.language, voiceLanguage: message.language, voiceName: "Extension matching voice" }); if (message.type === "speak-with-extension-voice") { extensionVoiceRequests.push(message); return Promise.resolve({ applied: true, language: message.language, voiceLanguage: message.language, engine: "extension" }); } if (message.type === "pause-extension-voice" || message.type === "resume-extension-voice") return Promise.resolve({ applied: true, engine: "extension" }); translationRequest = message; return Promise.resolve({ translatedText: String(message.target).startsWith("ar") ? "ينبغي أن يكون التعلم متاحاً." : "学习应该是无障碍的。", sourceLanguage: "en" }); } },
   storage: {
     sync: {
-      get(_key, callback) { storageGetCalls += 1; callback({ underProgress: storedSettings, underProgressProfile: storedProfile, underProgressPresets: storedPresets, underProgressDefaultPreset: storedDefaultPreset, underProgressSpeechLanguage: storedSpeechLanguage, underProgressTranslateBeforeSpeech: storedTranslateBeforeSpeech }); },
+      get(_key, callback) { storageGetCalls += 1; callback({ underProgress: storedSettings, underProgressProfile: storedProfile, underProgressPresets: storedPresets, underProgressDefaultPreset: storedDefaultPreset, underProgressSpeechLanguage: storedSpeechLanguage, underProgressTranslateBeforeSpeech: storedTranslateBeforeSpeech, underProgressSpeechRate: storedSpeechRate, underProgressSpeechPitch: storedSpeechPitch }); },
       set(values, callback) {
         const changes = {};
         if ("underProgress" in values) { storedSettings = values.underProgress; changes.underProgress = { newValue: storedSettings }; }
@@ -37,6 +39,8 @@ const chromeMock = {
         if ("underProgressDefaultPreset" in values) { storedDefaultPreset = values.underProgressDefaultPreset; changes.underProgressDefaultPreset = { newValue: storedDefaultPreset }; }
         if ("underProgressSpeechLanguage" in values) { storedSpeechLanguage = values.underProgressSpeechLanguage; changes.underProgressSpeechLanguage = { newValue: storedSpeechLanguage }; }
         if ("underProgressTranslateBeforeSpeech" in values) { storedTranslateBeforeSpeech = values.underProgressTranslateBeforeSpeech; changes.underProgressTranslateBeforeSpeech = { newValue: storedTranslateBeforeSpeech }; }
+        if ("underProgressSpeechRate" in values) { storedSpeechRate = values.underProgressSpeechRate; changes.underProgressSpeechRate = { newValue: storedSpeechRate }; }
+        if ("underProgressSpeechPitch" in values) { storedSpeechPitch = values.underProgressSpeechPitch; changes.underProgressSpeechPitch = { newValue: storedSpeechPitch }; }
         storageListeners.forEach((callback) => callback(changes, "sync"));
         callback?.();
       },
@@ -76,6 +80,8 @@ assert.equal(speakResponse.applied, true, "Read-aloud starts when text is availa
 assert.equal(speakResponse.language, "ar-AE", "Read-aloud reports the selected preferred language.");
 assert.equal(speech.lastUtterance.lang, "ar-AE", "Read-aloud applies the selected language to the speech utterance.");
 assert.equal(speech.lastUtterance.voice?.lang, "ar-AE", "Read-aloud selects the matching installed voice instead of the browser default.");
+assert.equal(speech.lastUtterance.rate, 0.7, "Read-aloud applies the user's saved speech speed.");
+assert.equal(speech.lastUtterance.pitch, 0.8, "Read-aloud applies the user's saved speech pitch.");
 assert.equal(speech.lastUtterance.text, "ينبغي أن يكون التعلم متاحاً.", "Read-aloud speaks translated Arabic text after the user opts in.");
 listeners.message({ origin: windowMock.location.origin, source: windowMock, data: { source: "under-progress-website", type: "set-language", language: "zh-CN" } });
 storedTranslateBeforeSpeech = true;
@@ -98,6 +104,8 @@ assert.equal(chineseSpeakResponse.applied, true, "Read-aloud recovers when an ex
 assert.equal(chineseSpeakResponse.engine, "extension", "The recovery uses the matching extension voice rather than a browser-default voice.");
 assert.equal(extensionVoiceRequests.at(-1).language, "zh-CN", "The recovered speech keeps the exact selected language.");
 assert.equal(extensionVoiceRequests.at(-1).text, "学习应该是无障碍的。", "The recovered extension voice receives translated target-language text.");
+assert.equal(extensionVoiceRequests.at(-1).rate, 0.7, "The recovered extension voice receives the saved speech speed.");
+assert.equal(extensionVoiceRequests.at(-1).pitch, 0.8, "The recovered extension voice receives the saved speech pitch.");
 const getsBeforeInvalidation = storageGetCalls;
 delete chromeMock.runtime.id;
 listeners.message({ origin: windowMock.location.origin, source: windowMock, data: { source: "under-progress-website", type: "request-profile" } });

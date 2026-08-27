@@ -14,6 +14,7 @@ async function ensurePageBridge(tabId) {
 }
 
 function languageBase(language) { return String(language || "").toLowerCase().split("-")[0]; }
+function normalizeSpeechSettings(state = {}) { const rate = Number(state.rate); const pitch = Number(state.pitch); return { rate: Number.isFinite(rate) ? Math.min(2, Math.max(0.5, rate)) : 1, pitch: Number.isFinite(pitch) ? Math.min(1.5, Math.max(0.5, pitch)) : 1 }; }
 async function matchingExtensionVoice(language) {
   if (!language || !chrome.tts?.getVoices) return null;
   const voices = await chrome.tts.getVoices();
@@ -31,12 +32,13 @@ async function extensionVoiceSupport(language) {
 async function speakWithExtensionVoice(message) {
   const language = String(message.language || "");
   const text = String(message.text || "").trim();
+  const settings = normalizeSpeechSettings(message);
   if (!text) return { applied: false, error: "No readable text was found." };
   const support = await extensionVoiceSupport(language);
   if (!support.available) return { applied: false, language, voiceSetup: true, error: `No ${language} voice is installed or available in this browser. Add a matching device voice, then try Read Aloud again.` };
   try {
-    await chrome.tts.speak(text, { lang: language, voiceName: support.voiceName });
-    return { applied: true, language, voiceLanguage: support.voiceLanguage, engine: "extension" };
+    await chrome.tts.speak(text, { lang: language, voiceName: support.voiceName, rate: settings.rate, pitch: settings.pitch });
+    return { applied: true, language, voiceLanguage: support.voiceLanguage, engine: "extension", speechRate: settings.rate, speechPitch: settings.pitch };
   } catch (error) {
     return { applied: false, language, voiceSetup: true, error: error instanceof Error ? error.message : "The matching browser voice could not start. Add or enable the voice, then try again." };
   }

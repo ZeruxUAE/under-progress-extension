@@ -55,10 +55,11 @@ try {
   await sleep(1200);
 
   const controlResult = await popup.command("Runtime.evaluate", {
-    expression: `(() => { const contrast = document.getElementById('contrast'); contrast.checked = true; contrast.dispatchEvent(new Event('input', { bubbles: true })); const scale = document.getElementById('textScale'); scale.value = '120'; scale.dispatchEvent(new Event('input', { bubbles: true })); return { speak: Boolean(document.getElementById('speak')), contrast: contrast.checked, scale: scale.value }; })()`,
+    expression: `new Promise(resolve => { const contrast = document.getElementById('contrast'); contrast.checked = true; contrast.dispatchEvent(new Event('input', { bubbles: true })); const scale = document.getElementById('textScale'); scale.value = '120'; scale.dispatchEvent(new Event('input', { bubbles: true })); const rate = document.getElementById('speechRate'); rate.value = '0.7'; rate.dispatchEvent(new Event('input', { bubbles: true })); const pitch = document.getElementById('speechPitch'); pitch.value = '0.8'; pitch.dispatchEvent(new Event('input', { bubbles: true })); setTimeout(() => chrome.storage.sync.get(['underProgressSpeechRate', 'underProgressSpeechPitch'], saved => resolve({ speak: Boolean(document.getElementById('speak')), contrast: contrast.checked, scale: scale.value, rate: saved.underProgressSpeechRate, pitch: saved.underProgressSpeechPitch })), 100); })`,
+    awaitPromise: true,
     returnByValue: true,
   });
-  assert.deepEqual(controlResult.result.value, { speak: true, contrast: true, scale: "120" }, "The real popup accepts user control changes and exposes Read Aloud.");
+  assert.deepEqual(controlResult.result.value, { speak: true, contrast: true, scale: "120", rate: 0.7, pitch: 0.8 }, "The real popup accepts display and persistent listening control changes and exposes Read Aloud.");
 
   await popup.command("Runtime.evaluate", { expression: `chrome.runtime.sendMessage = async message => message.type === 'speak-active-tab' ? { applied:false, voiceSetup:true, error:'No zh-CN voice is installed or available in this browser. Add a matching device voice, then try Read Aloud again.' } : { applied:true }; true`, returnByValue: true });
   await popup.command("Runtime.evaluate", {

@@ -28,6 +28,8 @@ If the Under Progress website moves to a custom domain later, update the `WEBSIT
 
 Read Aloud uses only a voice that matches the language selected in Under Progress. This avoids having English text read with an unrelated accent or using the browser’s default language without the person’s consent. The extension first checks browser-page voices and then Chrome/Edge extension voices. If neither has a match, the popup shows **Set up a language voice**. On Windows, open the button and follow the device steps to add the selected language under **Settings → Speech → Manage voices → Add voices**, then restart the browser. The extension will not silently substitute a different-language voice.
 
+Use the **Speech speed** and **Speech pitch** sliders in the popup to adjust delivery from 0.5× to 2.0× speed and 0.5× to 1.5× pitch. These choices are saved in extension storage and are applied to Read Aloud on ordinary supported webpages, including the matching Chrome/Edge speech-engine recovery path.
+
 For a page written in a different language from the saved voice, turn on **Translate before speaking** before reading selected text. This optional feature is limited to 430 characters and uses the free MyMemory service only for the text explicitly selected for speech.
 
 ## Browser permissions
